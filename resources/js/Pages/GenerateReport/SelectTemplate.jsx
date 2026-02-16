@@ -22,9 +22,9 @@ export default function SelectTemplate() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center">
                     
-                    {/* Text Template Option - Update href if you have a separate text mapper */}
+                    {/* Text Template Option */}
                     <Link 
-                        href="#" 
+                        href={route('templates.text-editor')} 
                         className="w-full max-w-sm p-10 border-2 border-dashed border-gray-200 rounded-[2rem] hover:border-green-500 hover:bg-green-50/30 transition-all group text-center"
                     >
                         <div className="text-6xl font-serif mb-4 text-gray-300 group-hover:text-green-600 transition-colors">Aa</div>

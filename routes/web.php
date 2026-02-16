@@ -34,6 +34,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('GenerateReport/SelectTemplate'); 
     })->name('templates.select');
 
+    Route::get('/generate-report/text-editor', function () {
+        return Inertia::render('GenerateReport/Templates/TextTemplateEditor');
+    })->name('templates.text-editor');
+
     Route::get('/generate-report/mapper', function () {
         return Inertia::render('GenerateReport/Templates/DocumentMapper');
     })->name('templates.mapper');
