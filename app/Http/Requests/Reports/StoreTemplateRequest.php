@@ -11,7 +11,7 @@ class StoreTemplateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -26,6 +26,7 @@ class StoreTemplateRequest extends FormRequest
             'type' => 'required|in:text,upload',
             'content' => 'required_if:type,text',
             'file' => 'required_if:type,upload|file|mimes:pdf,docx|max:5120',
+            'mappings' => 'nullable|array',
         ];
     }
 }

@@ -13,6 +13,7 @@ class TemplateController extends Controller
     public function index()
     {
         return Inertia::render('GenerateReport/Index', [
+            // Fetching all templates to display in the list
             'templates' => Template::latest()->get()
         ]);
     }
