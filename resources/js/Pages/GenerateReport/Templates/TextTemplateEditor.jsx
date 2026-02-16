@@ -40,6 +40,15 @@ export default function TextTemplateEditor() {
             <Head title="Text Template Editor" />
 
             <div className="mb-6">
+                <Link
+                    href={route('templates.select')}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition mb-2"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Select Template
+                </Link>
                 <nav className="flex items-center text-sm gap-2 mb-2">
                     <Link href="/generate-reports" className="text-gray-400 hover:text-green-600 transition">Templates</Link>
                     <span className="text-gray-400">&gt;</span>

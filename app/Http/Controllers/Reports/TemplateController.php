@@ -43,59 +43,63 @@ class TemplateController extends Controller
      * Generate the filled PDF report
      */
     public function generate(Template $template, Employee $employee)
-    {
-        // 1. Handle UPLOAD (PDF-based) templates
-        if ($template->type === 'upload') {
-            $pdf = new Fpdi();
-            $filePath = storage_path('app/public/' . $template->file_path);
-            
-            if (!$template->file_path || !file_exists($filePath)) {
-                return back()->with('error', 'Template file not found.');
-            }
+{
+    // Use the TCPDF-based version to fix your friend's compression error
+    $pdf = new \setasign\Fpdi\Tcpdf\Fpdi(); 
     
-            $pdf->setSourceFile($filePath);
-            $templateId = $pdf->importPage(1);
-            $pdf->AddPage('P', 'A4'); 
-            $pdf->useTemplate($templateId);
-    
-            $pdf->SetFont('Helvetica', 'B', 10); 
-            $pdf->SetTextColor(0, 0, 0);
-    
-            foreach ($template->field_mappings ?? [] as $mapping) {
-                $value = $this->getMappingValue($mapping['tag'], $employee);
-                $scale = 0.264583;
-                $x_mm = (floatval($mapping['x']) * $scale) + 1.0;
-                $y_mm = (floatval($mapping['y']) * $scale) + 2.5;
-    
-                $pdf->SetXY($x_mm, $y_mm);
-                $pdf->Write(0, $value);
-            }
-    
-            if (ob_get_contents()) ob_end_clean();
-            return response($pdf->Output('Report.pdf', 'S'), 200)
-                ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="Report_'.$employee->full_name.'.pdf"');
+    // Determine the safe filename
+    $fileName = $template->name . '_' . $employee->full_name . '.pdf';
+
+    if ($template->type === 'upload') {
+        $filePath = storage_path('app/public/' . $template->file_path);
+        
+        if (!$template->file_path || !file_exists($filePath)) {
+            return back()->with('error', 'Template file not found.');
         }
-    
-        // 2. Handle TEXT templates (Simple TCPDF generation)
-        if ($template->type === 'text') {
-            $pdf = new Fpdi(); // Fpdi extends TCPDF, so we can use it for plain text too
-            $pdf->AddPage();
-            $pdf->SetFont('Helvetica', '', 12);
-            
-            // Replace the tag in the content
-            $content = str_replace('@Employee Name', strtoupper($employee->full_name), $template->content);
-            
-            $pdf->Write(5, $content);
-            
-            if (ob_get_contents()) ob_end_clean();
-            return response($pdf->Output('Report.pdf', 'S'), 200)
-                ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="Report_'.$employee->full_name.'.pdf"');
+
+        $pdf->setSourceFile($filePath);
+        $templateId = $pdf->importPage(1);
+        $pdf->AddPage('P', 'A4'); 
+        $pdf->useTemplate($templateId);
+
+        $pdf->SetFont('Helvetica', 'B', 10); 
+        $pdf->SetTextColor(0, 0, 0);
+
+        foreach ($template->field_mappings ?? [] as $mapping) {
+            $value = $this->getMappingValue($mapping['tag'], $employee);
+            $scale = 0.264583;
+            $x_mm = (floatval($mapping['x']) * $scale) + 1.0;
+            $y_mm = (floatval($mapping['y']) * $scale) + 2.0; // Updated offset to move text up
+
+            $pdf->SetXY($x_mm, $y_mm);
+            $pdf->Write(0, $value);
         }
-    
-        return back()->with('error', 'Invalid template type.');
+    } 
+    else if ($template->type === 'text') {
+        $pdf->AddPage('P', 'A4');
+        $pdf->SetFont('Helvetica', '', 12);
+        $pdf->SetMargins(20, 20, 20);
+        
+        $content = $template->content;
+        $tags = ['@Employee Name', '@Role', '@Department', '@Email', '@Join Date'];
+
+        foreach ($tags as $tag) {
+            $content = str_replace($tag, $this->getMappingValue($tag, $employee), $content);
+        }
+        
+        $pdf->MultiCell(0, 10, $content, 0, 'L');
     }
+
+    if (ob_get_contents()) ob_end_clean();
+    
+    // FIX: Pass the filename as the first argument to Output() 
+    // and use 'S' to return it as a string to Laravel
+    $fileData = $pdf->Output($fileName, 'S');
+
+    return response($fileData, 200)
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+}
     
     /**
      * Helper to get employee values based on tags

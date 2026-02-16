@@ -29,18 +29,30 @@ export default function Index({ templates, employees }) {
 
     const handleGenerate = () => {
         if (selectedEmployees.length > 0 && selectedTemplate) {
-            // For multiple employees, we trigger downloads in a loop
             selectedEmployees.forEach((emp, index) => {
+                // We use a slight delay for each to ensure the browser registers them as separate events
                 setTimeout(() => {
-                    window.open(route('reports.generate', { 
+                    const downloadUrl = route('reports.generate', { 
                         template: selectedTemplate.id, 
                         employee: emp.id 
-                    }), '_blank');
-                }, index * 500); // Staggered to prevent browser blocking multiple popups
+                    });
+
+                    // Create a temporary hidden anchor element
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    
+                    // We don't set target="_blank" because the controller 
+                    // already sends 'Content-Disposition: attachment'
+                    link.setAttribute('download', `Report_${emp.full_name}.pdf`);
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                }, index * 1000); // Increased to 1 second to be safe with browser blocks
             });
         }
     };
-
     const closeModal = () => {
         setSelectedTemplate(null);
         setSelectedEmployees([]); // Clear selection on close
@@ -51,6 +63,15 @@ export default function Index({ templates, employees }) {
             <Head title="Generate Report" />
 
             <div className="mb-6">
+                <Link
+                    href={route('dashboard')}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition mb-2"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Dashboard
+                </Link>
                 <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Generate Report</h1>
                 <p className="text-green-600 text-sm font-semibold">Templates</p>
             </div>
@@ -89,7 +110,12 @@ export default function Index({ templates, employees }) {
                                     <p className="text-xs font-medium opacity-90 mb-6 uppercase tracking-wider">Type : {template.type}</p>
                                     <div className="mt-auto">
                                         <p className="text-[10px] font-semibold opacity-80 uppercase tracking-widest">
-                                            Coordinated Maps: {template.field_mappings ? Object.keys(template.field_mappings).length : 0} fields
+                                            {/* Updated Counter Logic */}
+                                            Coordinated Maps: {
+                                                template.type === 'text' 
+                                                    ? (template.content?.match(/@[\w\s]+/g)?.length || 0) 
+                                                    : (template.field_mappings ? Object.keys(template.field_mappings).length : 0)
+                                            } fields
                                         </p>
                                         <p className="text-[10px] font-semibold opacity-60">
                                             Created: {new Date(template.created_at).toLocaleDateString('en-GB')}
