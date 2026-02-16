@@ -28,8 +28,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
 
     // --- REPORT & TEMPLATE ROUTES ---
-    
-    // Updated to use the Controller index to fetch saved templates
     Route::get('/generate-reports', [TemplateController::class, 'index'])->name('generate-reports.index');
 
     Route::get('/generate-report/select', function () {
@@ -41,6 +39,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('templates.mapper');
 
     Route::post('/generate-report/save', [TemplateController::class, 'store'])->name('templates.save');
+
+
+    Route::get('/generate-report/{template}/{employee}', [TemplateController::class, 'generate'])
+        ->name('reports.generate'); 
 });
 
 Route::middleware('auth')->group(function () {
