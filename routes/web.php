@@ -30,6 +30,14 @@ Route::get('/generate-report/select', function () {
     return Inertia::render('GenerateReport/SelectTemplate'); 
 })->name('templates.select');
 
+//Mapper
+Route::get('/generate-report/mapper', function () {
+    return Inertia::render('GenerateReport/Templates/DocumentMapper');
+})->name('templates.mapper');
+
+//Save 
+Route::post('/generate-report/save', [TemplateController::class, 'store'])->name('templates.save');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

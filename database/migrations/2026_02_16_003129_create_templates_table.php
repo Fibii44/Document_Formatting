@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('templates', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); 
-            $table->enum('type', ['text', 'upload']); 
-            $table->text('content')->nullable(); // For text-based reports
-            $table->string('file_path')->nullable(); // For uploaded files (PDF/Docs)
+            $table->string('name');
+            $table->enum('type', ['text', 'upload']); // This tells Laravel which one it is
+            $table->text('content')->nullable();      // Used for 'text' templates
+            $table->string('file_path')->nullable();  // Used for 'upload' templates (PDF path)
+            $table->json('field_mappings')->nullable(); // Stores the drag-and-drop coordinates
             $table->timestamps();
         });
     }
