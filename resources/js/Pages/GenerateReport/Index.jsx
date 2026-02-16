@@ -29,18 +29,30 @@ export default function Index({ templates, employees }) {
 
     const handleGenerate = () => {
         if (selectedEmployees.length > 0 && selectedTemplate) {
-            // For multiple employees, we trigger downloads in a loop
             selectedEmployees.forEach((emp, index) => {
+                // We use a slight delay for each to ensure the browser registers them as separate events
                 setTimeout(() => {
-                    window.open(route('reports.generate', { 
+                    const downloadUrl = route('reports.generate', { 
                         template: selectedTemplate.id, 
                         employee: emp.id 
-                    }), '_blank');
-                }, index * 500); // Staggered to prevent browser blocking multiple popups
+                    });
+
+                    // Create a temporary hidden anchor element
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    
+                    // We don't set target="_blank" because the controller 
+                    // already sends 'Content-Disposition: attachment'
+                    link.setAttribute('download', `Report_${emp.full_name}.pdf`);
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                }, index * 1000); // Increased to 1 second to be safe with browser blocks
             });
         }
     };
-
     const closeModal = () => {
         setSelectedTemplate(null);
         setSelectedEmployees([]); // Clear selection on close
@@ -89,7 +101,12 @@ export default function Index({ templates, employees }) {
                                     <p className="text-xs font-medium opacity-90 mb-6 uppercase tracking-wider">Type : {template.type}</p>
                                     <div className="mt-auto">
                                         <p className="text-[10px] font-semibold opacity-80 uppercase tracking-widest">
-                                            Coordinated Maps: {template.field_mappings ? Object.keys(template.field_mappings).length : 0} fields
+                                            {/* Updated Counter Logic */}
+                                            Coordinated Maps: {
+                                                template.type === 'text' 
+                                                    ? (template.content?.match(/@[\w\s]+/g)?.length || 0) 
+                                                    : (template.field_mappings ? Object.keys(template.field_mappings).length : 0)
+                                            } fields
                                         </p>
                                         <p className="text-[10px] font-semibold opacity-60">
                                             Created: {new Date(template.created_at).toLocaleDateString('en-GB')}
