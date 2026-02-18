@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
@@ -45,7 +45,7 @@ const PLACEHOLDER_GROUPS = [
 ];
 
 export default function TextTemplateEditor() {
-    const textareaRef = useRef(null);
+    const editorRef = useRef(null);
     const [openGroups, setOpenGroups] = useState(
         () => PLACEHOLDER_GROUPS.map(group => group.label) // all open by default
     );
@@ -74,26 +74,80 @@ export default function TextTemplateEditor() {
         content: '',
     });
 
-    const insertPlaceholder = (tag) => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const before = data.content.slice(0, start);
-            const after = data.content.slice(end);
-            
-            // Insert tag at cursor position
-            setData('content', before + tag + after);
-            
-            // Refocus textarea after state update
-            setTimeout(() => {
-                textarea.focus();
-                textarea.setSelectionRange(start + tag.length, start + tag.length);
-            }, 0);
-        } else {
-            setData('content', data.content + tag);
-        }
+    const buildPlainContentFromEditor = () => {
+        const editor = editorRef.current;
+        if (!editor) return;
+
+        const walk = (node) => {
+            let text = '';
+            node.childNodes.forEach((child) => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    text += child.textContent;
+                } else if (
+                    child.nodeType === Node.ELEMENT_NODE &&
+                    child.hasAttribute('data-placeholder')
+                ) {
+                    text += child.getAttribute('data-placeholder');
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    text += walk(child);
+                }
+            });
+            return text;
+        };
+
+        const plain = walk(editor);
+        setData('content', plain);
     };
+
+    const handleEditorInput = () => {
+        buildPlainContentFromEditor();
+    };
+
+    const insertPlaceholder = (tag) => {
+        const editor = editorRef.current;
+        if (!editor) {
+            setData('content', data.content + tag);
+            return;
+        }
+
+        editor.focus();
+
+        const selection = window.getSelection();
+        if (!selection) return;
+
+        let range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+        if (!range || !editor.contains(range.commonAncestorContainer)) {
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+
+        const pill = document.createElement('span');
+        pill.setAttribute('data-placeholder', tag);
+        pill.contentEditable = 'false';
+        pill.className =
+            'inline-flex items-center px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[11px] font-bold border border-green-300 align-middle mx-[1px]';
+        pill.textContent = tag;
+
+        range.insertNode(pill);
+
+        // Move cursor after pill
+        const space = document.createTextNode(' ');
+        pill.after(space);
+        range.setStartAfter(space);
+        range.setEndAfter(space);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        buildPlainContentFromEditor();
+    };
+
+    useEffect(() => {
+        if (editorRef.current && data.content && editorRef.current.innerText.trim() === '') {
+            editorRef.current.innerText = data.content;
+        }
+    }, [data.content]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -206,12 +260,14 @@ export default function TextTemplateEditor() {
                     {/* Main Editor */}
                     <div className="flex-1">
                         <label className="block font-bold text-gray-800 mb-2 text-sm">Report Content Editor</label>
-                        <textarea
-                            ref={textareaRef}
-                            value={data.content}
-                            onChange={e => setData('content', e.target.value)}
-                            placeholder="Type your report content here. Use the fields on the left to personalize the report for each employee."
-                            className="w-full border border-gray-200 rounded-[1.5rem] p-6 text-sm focus:ring-green-500 focus:border-green-500 resize-none min-h-[600px] shadow-inner leading-relaxed"
+                        <div
+                            ref={editorRef}
+                            contentEditable
+                            onInput={handleEditorInput}
+                            data-placeholder="Type your report content here. Use the fields on the left to personalize the report for each employee."
+                            className="w-full border border-gray-200 rounded-[1.5rem] p-6 text-sm focus:ring-green-500 focus:border-green-500 min-h-[600px] shadow-inner leading-relaxed outline-none whitespace-pre-wrap"
+                            role="textbox"
+                            aria-multiline="true"
                         />
                         <div className="mt-2 flex justify-between text-[10px] text-gray-400 font-medium px-2">
                             <span>Format: Standard Paragraphs</span>
