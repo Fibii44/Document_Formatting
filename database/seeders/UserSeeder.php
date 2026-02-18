@@ -13,11 +13,11 @@ class UserSeeder extends Seeder
         // 1. The Minimum Wage Earner (MWE)
         // Tests: Non-Taxable Earnings logic
         User::create([
-            'first_name' => 'MARIA',
-            'last_name' => 'DELA CRUZ',
-            'middle_name' => 'SANTOS',
-            'middle_initial' => 'S.',
-            'email' => 'maria@example.com',
+            'first_name' => 'FEBY ANGELA',
+            'last_name' => 'FELICES',
+            'middle_name' => 'HILUDO',
+            'middle_initial' => 'H.',
+            'email' => 'felicesfebyangela@gmail.com',
             'password' => Hash::make('password'),
             'role' => 'UTILITY WORKER',
             'department' => 'MAINTENANCE',

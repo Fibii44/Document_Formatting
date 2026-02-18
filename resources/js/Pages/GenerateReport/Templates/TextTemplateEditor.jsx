@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import PageHeader from '@/Components/PageHeader';
 
 const PLACEHOLDERS = ['@Employee Name', '@Role', '@Department', '@Email', '@Join Date'];
 
@@ -39,25 +40,15 @@ export default function TextTemplateEditor() {
         <MainLayout>
             <Head title="Text Template Editor" />
 
-            <div className="mb-6">
-                <Link
-                    href={route('templates.select')}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-green-600 transition mb-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to Select Template
-                </Link>
-                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Generate Report</h1>
-                <nav className="flex items-center text-sm gap-2 mb-2">
-                    <Link href="/generate-reports" className="text-gray-400 hover:text-green-600 transition">Templates</Link>
-                    <span className="text-gray-400">&gt;</span>
-                    <Link href="/generate-report/select" className="text-gray-400 hover:text-green-600 transition">Select Template</Link>
-                    <span className="text-gray-400">&gt;</span>
-                    <span className="text-green-600 font-semibold">Text Editor</span>
-                </nav>
-            </div>
+            <PageHeader 
+                title="Generate Report"
+                backRoute="templates.select"
+                steps={[
+                    { label: 'Templates', link: '/generate-reports' },
+                    { label: 'Select Template', link: '/generate-report/select' },
+                    { label: 'Text Editor'}
+                ]}
+            />
 
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
                 <div className="flex justify-between items-center mb-6 gap-4">
