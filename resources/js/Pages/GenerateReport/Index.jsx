@@ -4,10 +4,10 @@ import { Head, Link } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import PageHeader from '@/Components/PageHeader';
 
-
 export default function Index({ templates, users }) {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [selectedUsers, setSelectedUsers] = useState([]);
+    const [exportFormat, setExportFormat] = useState('pdf');
 
     const handleAddUser = (e) => {
         const id = e.target.value;
@@ -28,31 +28,43 @@ export default function Index({ templates, users }) {
 
     const handleGenerate = () => {
         if (selectedUsers.length > 0 && selectedTemplate) {
-            selectedUsers.forEach((user, index) => {
-                setTimeout(() => {
-                    const downloadUrl = route('reports.generate', { 
-                        template: selectedTemplate.id, 
-                        employee: user.id 
-                    });
+            if (exportFormat === 'pdf') {
+                selectedUsers.forEach((user, index) => {
+                    setTimeout(() => {
+                        const url = route('reports.generate', { 
+                            template: selectedTemplate.id, 
+                            employee: user.id 
+                        });
 
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    
-                    const fileName = `${user.first_name}_${user.last_name}`;
-                    link.setAttribute('download', `Report_${fileName}.pdf`);
-                    
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                }, index * 1000); 
-            });
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.setAttribute('download', `Report_${user.last_name}.pdf`); 
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }, index * 1000); 
+                });
+            } else {
+                const userIds = selectedUsers.map(u => u.id).join(',');
+                const url = route('reports.export-excel', { 
+                    template: selectedTemplate.id,
+                    user_ids: userIds 
+                });
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `Report_${selectedTemplate.name}.xlsx`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
     };
 
     const closeModal = () => {
         setSelectedTemplate(null);
         setSelectedUsers([]); 
+        setExportFormat('pdf');
     };
 
     return (
@@ -62,11 +74,8 @@ export default function Index({ templates, users }) {
             <PageHeader 
                 title="Generate Report"
                 backRoute="generate-reports.index"
-                steps={[
-                    { label: 'Templates' }, 
-                ]}
+                steps={[{ label: 'Templates' }]}
             />
-
 
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div className="flex justify-between items-center mb-8">
@@ -102,7 +111,28 @@ export default function Index({ templates, users }) {
                                     <p className="text-xs font-medium opacity-90 mb-6 uppercase tracking-wider">Type : {template.type}</p>
                                     <div className="mt-auto">
                                         <p className="text-[10px] font-semibold opacity-80 uppercase tracking-widest">
-                                            Maps: {template.field_mappings ? Object.keys(template.field_mappings).length : 0} fields
+                                            {template.type === 'text' ? (
+                                                (() => {
+                                                    // Scans the content string for your @ placeholders
+                                                    const availableTags = [
+                                                        '@Full Name (First MI Last)', '@Full Name (Last, First MI)', 
+                                                        '@Full Name (Last, First)', '@Middle Name', '@TIN', '@Role', 
+                                                        '@Department', '@Email', '@Join Date', '@Monthly Salary', 
+                                                        '@Holiday Pay', '@Overtime Pay', '@Hazard Pay', '@MWE Status', 
+                                                        '@Exempt Bonus', '@Taxable Bonus', '@Total Contributions', 
+                                                        '@Employee Name'
+                                                    ];
+                                                    
+                                                    const count = availableTags.reduce((acc, tag) => {
+                                                        return acc + (template.content?.includes(tag) ? 1 : 0);
+                                                    }, 0);
+
+                                                    return `Tags: ${count} fields`;
+                                                })()
+                                            ) : (
+                                                // Standard count for upload templates using field_mappings column
+                                                `Fields: ${template.field_mappings ? Object.keys(template.field_mappings).length : 0} fields`
+                                            )}
                                         </p>
                                         <p className="text-[10px] font-semibold opacity-60">
                                             Created: {new Date(template.created_at).toLocaleDateString('en-GB')}
@@ -134,7 +164,7 @@ export default function Index({ templates, users }) {
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h-2v5.586l-1.293-1.293z" />
                         </svg>
-                        Generate PDF
+                        Generate {exportFormat === 'pdf' ? 'PDF' : 'Excel'}
                     </button>
                 }
             >
@@ -183,7 +213,6 @@ export default function Index({ templates, users }) {
                         </div>
                     )}
 
-                    {/* RESTORED: Download Format Section */}
                     <div className="space-y-2">
                         <label className="flex items-center gap-2 text-gray-800 font-bold text-sm">
                             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,11 +221,17 @@ export default function Index({ templates, users }) {
                             Download Format
                         </label>
                         <div className="grid grid-cols-2 gap-4">
-                            <button className="flex items-center justify-center gap-2 border-2 border-green-600 text-gray-800 p-3 rounded-xl font-bold text-xs bg-green-50/50">
-                                <span className="text-red-600 font-black">A</span> PDF Document
+                            <button 
+                                onClick={() => setExportFormat('pdf')}
+                                className={`flex items-center justify-center gap-2 border-2 p-3 rounded-xl font-bold text-xs transition-all ${exportFormat === 'pdf' ? 'border-[#469a21] bg-green-50 text-gray-800' : 'border-gray-100 text-gray-400 hover:border-gray-300'}`}
+                            >
+                                <span className={exportFormat === 'pdf' ? 'text-red-600' : 'text-gray-400'}>A</span> PDF Document
                             </button>
-                            <button disabled className="flex items-center justify-center gap-2 border border-gray-200 text-gray-300 p-3 rounded-xl font-bold text-xs cursor-not-allowed">
-                                <span className="text-green-500 opacity-50">X</span> Excel / CSV
+                            <button 
+                                onClick={() => setExportFormat('excel')}
+                                className={`flex items-center justify-center gap-2 border-2 p-3 rounded-xl font-bold text-xs transition-all ${exportFormat === 'excel' ? 'border-[#469a21] bg-green-50 text-gray-800' : 'border-gray-100 text-gray-400 hover:border-gray-300'}`}
+                            >
+                                <span className={exportFormat === 'excel' ? 'text-green-500' : 'text-gray-400'}>X</span> Excel / CSV
                             </button>
                         </div>
                     </div>

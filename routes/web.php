@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Reports\TemplateController; // Import your TemplateController
-use App\Http\Controllers\EmployeeController;          // ADD THIS LINE
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\Reports\TemplateController; 
+use App\Http\Controllers\EmployeeController;     
+use Illuminate\Foundation\Application;  
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,10 +23,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // --- EMPLOYEE ROUTES ---
-    Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
-    Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
-
+   
+   
     // --- REPORT & TEMPLATE ROUTES ---
     Route::get('/generate-reports', [TemplateController::class, 'index'])->name('generate-reports.index');
 
@@ -34,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('GenerateReport/SelectTemplate'); 
     })->name('templates.select');
 
+    //Templates
     Route::get('/generate-report/text-editor', function () {
         return Inertia::render('GenerateReport/Templates/TextTemplateEditor');
     })->name('templates.text-editor');
@@ -44,9 +43,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/generate-report/save', [TemplateController::class, 'store'])->name('templates.save');
 
-
+    // PDF GENERATION
     Route::get('/generate-report/{template}/{employee}', [TemplateController::class, 'generate'])
         ->name('reports.generate'); 
+
+    //  EXCEL EXPORT
+    Route::get('/export-excel/{template}', [TemplateController::class, 'exportExcel'])
+        ->name('reports.export-excel');
 });
 
 Route::middleware('auth')->group(function () {
