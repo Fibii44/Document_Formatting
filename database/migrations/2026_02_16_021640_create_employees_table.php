@@ -11,15 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('employees', function (Blueprint $table) {
-        $table->id();
-        $table->string('full_name');       // For @Employee Name
-        $table->string('role');            // For @Role
-        $table->string('department');      // For @Department
-        $table->string('email')->unique(); // For @Email
-        $table->date('join_date');         // For @Join Date
-        $table->timestamps();
-    });
+        Schema::create('employees', function (Blueprint $table) {
+            $table->id();
+            // Split names for better formatting flexibility
+            $table->string('first_name');      
+            $table->string('last_name');       
+            $table->string('middle_name')->nullable(); 
+            
+            // Keep a virtual or standard full_name for general use
+            $table->string('full_name');       
+
+            $table->string('role');            
+            $table->string('department');      
+            $table->string('email')->unique(); 
+            $table->date('join_date');         
+            $table->timestamps();
+        });
     }
     /**
      * Reverse the migrations.

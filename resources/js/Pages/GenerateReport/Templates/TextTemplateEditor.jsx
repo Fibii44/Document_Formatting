@@ -49,6 +49,7 @@ export default function TextTemplateEditor() {
                     </svg>
                     Back to Select Template
                 </Link>
+                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Generate Report</h1>
                 <nav className="flex items-center text-sm gap-2 mb-2">
                     <Link href="/generate-reports" className="text-gray-400 hover:text-green-600 transition">Templates</Link>
                     <span className="text-gray-400">&gt;</span>
@@ -56,7 +57,6 @@ export default function TextTemplateEditor() {
                     <span className="text-gray-400">&gt;</span>
                     <span className="text-green-600 font-semibold">Text Editor</span>
                 </nav>
-                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Generate Report</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">

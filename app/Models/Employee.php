@@ -9,23 +9,26 @@ class Employee extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     * These correspond to the @tags in your Document Mapper.
-     */
     protected $fillable = [
-        'full_name',  // Maps to @Employee Name
-        'role',       // Maps to @Role
-        'department', // Maps to @Department
-        'email',      // Maps to @Email
-        'join_date',  // Maps to @Join Date
+        'first_name',
+        'middle_name',
+        'last_name',
+        'full_name', // Kept for standard certificates
+        'role',
+        'department',
+        'email',
+        'join_date',
     ];
 
-    /**
-     * Optional: Cast the join_date to a date object for easier formatting
-     * in your generated reports.
-     */
     protected $casts = [
         'join_date' => 'date',
     ];
+
+    /**
+     * Helper to get Middle Initial (e.g., "P.")
+     */
+    public function getMiddleInitialAttribute()
+    {
+        return $this->middle_name ? strtoupper(substr($this->middle_name, 0, 1)) . '.' : '';
+    }
 }
