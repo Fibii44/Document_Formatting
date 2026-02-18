@@ -13,10 +13,41 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            
+            // 1. Identification & Formatting Support
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('middle_name')->nullable();
+            $table->string('middle_initial', 10)->nullable();
+            $table->string('tin_number')->nullable(); // Required for BIR 2316
+            
+            // 2. Security & Auth
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
+            // 3. Professional Details
+            $table->string('role')->nullable(); // For @Role tag
+            $table->string('department')->nullable(); // For @Department tag
+            $table->date('join_date')->nullable(); // For @Join Date tag
+            
+            // 4. Dynamic Logic Flags
+            // This determines if holiday/OT pay is taxable or not
+            $table->boolean('is_mwe')->default(false); 
+
+            // 5. Raw Payroll Data (Source Values)
+            // Stored as decimal for currency precision
+            $table->decimal('salary', 15, 2)->default(0); // Basic Salary
+            $table->decimal('holiday_pay', 15, 2)->default(0);
+            $table->decimal('overtime_pay', 15, 2)->default(0);
+            $table->decimal('hazard_pay', 15, 2)->default(0);
+            $table->decimal('bonus_total', 15, 2)->default(0); // For the 90k logic
+
+            // 6. Statutory Contributions (Employee Shares)
+            $table->decimal('sss_contri', 15, 2)->default(0);
+            $table->decimal('ph_contri', 15, 2)->default(0); // PhilHealth
+            $table->decimal('pi_contri', 15, 2)->default(0); // Pag-IBIG
+
             $table->rememberToken();
             $table->timestamps();
         });
