@@ -1,30 +1,72 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
 
 // Synced with DocumentMapper and HasReportMapping Trait
-const PLACEHOLDERS = [
-    '@Full Name (First MI Last)',
-    '@Full Name (Last, First MI)',
-    '@Full Name (Last, First)',
-    '@TIN',
-    '@Role',
-    '@Department',
-    '@Email',
-    '@Join Date',
-    '@Monthly Salary',
-    '@Holiday Pay',
-    '@Overtime Pay',
-    '@Hazard Pay',
-    '@MWE Status',
-    '@Exempt Bonus',
-    '@Taxable Bonus',
-    '@Total Contributions',
+const PLACEHOLDER_GROUPS = [
+    {
+        label: 'Personal Information',
+        fields: [
+            '@Full Name (First MI Last)',
+            '@Full Name (Last, First MI)',
+            '@Full Name (Last, First)',
+            '@Middle Name',
+            '@TIN',
+            '@Email',
+        ],
+    },
+    {
+        label: 'Employment Details',
+        fields: [
+            '@Role',
+            '@Department',
+            '@Join Date',
+        ],
+    },
+    {
+        label: 'Compensation & Earnings',
+        fields: [
+            '@Monthly Salary',
+            '@Holiday Pay',
+            '@Overtime Pay',
+            '@Hazard Pay',
+            '@Exempt Bonus',
+            '@Taxable Bonus',
+        ],
+    },
+    {
+        label: 'Tax & Contributions',
+        fields: [
+            '@MWE Status',
+            '@Total Contributions',
+        ],
+    },
 ];
 
 export default function TextTemplateEditor() {
     const textareaRef = useRef(null);
+    const [openGroups, setOpenGroups] = useState(
+        () => PLACEHOLDER_GROUPS.map(group => group.label) // all open by default
+    );
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const toggleGroup = (label) => {
+        setOpenGroups((current) =>
+            current.includes(label)
+                ? current.filter((l) => l !== label)
+                : [...current, label]
+        );
+    };
+
+    const filteredGroups = PLACEHOLDER_GROUPS.map((group) => ({
+        ...group,
+        fields: group.fields.filter((tag) =>
+            tag.toLowerCase().includes(searchTerm.toLowerCase())
+        ),
+    })).filter((group) =>
+        searchTerm.trim() === '' ? true : group.fields.length > 0
+    );
 
     const { data, setData, post, processing, errors } = useForm({
         name: '',
@@ -96,20 +138,68 @@ export default function TextTemplateEditor() {
                 <div className="flex gap-8">
                     {/* Sidebar: Data Fields */}
                     <div className="w-[340px] border border-gray-100 rounded-2xl p-5 bg-gray-50/50 flex flex-col shadow-sm h-[600px]">
-                        <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wider">Insert Data Fields</h3>
-                        <p className="text-gray-400 text-[10px] mb-4 italic">Click a field to insert it into your report at the cursor position.</p>
+                        <h3 className="font-bold text-gray-800 mb-1 text-sm uppercase tracking-wider">Insert Data Fields</h3>
+                        <p className="text-gray-400 text-[10px] mb-4 italic">
+                            1) Choose a category, 2) Click a green item to insert it into your letter.
+                        </p>
+
+                        <div className="relative mb-4">
+                            <input
+                                type="text"
+                                placeholder="Search data fields (e.g. salary, name)..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-[11px] focus:ring-green-500 focus:border-green-500 bg-white"
+                            />
+                            <svg
+                                className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                        </div>
                         
-                        <div className="space-y-2 overflow-y-auto pr-2 scrollbar-thin">
-                            {PLACEHOLDERS.map((tag) => (
-                                <button
-                                    key={tag}
-                                    type="button"
-                                    onClick={() => insertPlaceholder(tag)}
-                                    className="w-full text-left p-3 bg-white border border-gray-200 rounded-xl hover:border-green-500 hover:shadow-md transition-all group"
-                                >
-                                    <p className="text-green-600 font-bold text-[11px] group-hover:text-green-700">{tag}</p>
-                                </button>
+                        <div className="space-y-3 overflow-y-auto pr-2 scrollbar-thin">
+                            {filteredGroups.map((group) => (
+                                <div key={group.label} className="space-y-1 bg-white/60 border border-gray-100 rounded-xl px-3 py-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleGroup(group.label)}
+                                        className="w-full flex items-center justify-between text-left text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1"
+                                    >
+                                        <span>{group.label}</span>
+                                        <span className="text-[9px] text-gray-400">
+                                            {openGroups.includes(group.label) ? '▾' : '▸'}
+                                        </span>
+                                    </button>
+
+                                    {openGroups.includes(group.label) && group.fields.map((tag) => (
+                                        <button
+                                            key={tag}
+                                            type="button"
+                                            onClick={() => insertPlaceholder(tag)}
+                                            className="w-full text-left mt-1 p-2.5 bg-green-50 border border-green-100 rounded-lg hover:border-green-500 hover:bg-green-100 hover:shadow-md transition-all group"
+                                        >
+                                            <p className="text-green-700 font-bold text-[11px] group-hover:text-green-800">
+                                                {tag}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
                             ))}
+
+                            {filteredGroups.length === 0 && (
+                                <p className="text-[11px] text-gray-400 italic mt-4">
+                                    No data fields match your search. Try a different word.
+                                </p>
+                            )}
                         </div>
                     </div>
 
