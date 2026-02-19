@@ -69,10 +69,8 @@ export default function Index({ templates, users }) {
 
             <PageHeader 
                 title="Generate Report"
-                backRoute="generate-reports.index"
                 steps={[{ label: 'Templates' }]}
             />
-
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div className="flex justify-between items-center mb-8">
                     <div>
