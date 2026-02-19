@@ -22,8 +22,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
-
-   
    
     // --- REPORT & TEMPLATE ROUTES ---
     Route::get('/generate-reports', [TemplateController::class, 'index'])->name('generate-reports.index');
@@ -31,6 +29,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/generate-report/select', function () {
         return Inertia::render('GenerateReport/SelectTemplate'); 
     })->name('templates.select');
+
+    Route::get('/generate-report/{id}/review', [TemplateController::class, 'review'])
+    ->name('templates.review');
 
     //Templates
     Route::get('/generate-report/text-editor', function () {
