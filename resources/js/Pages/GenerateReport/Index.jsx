@@ -71,6 +71,7 @@ export default function Index({ templates, users }) {
                 title="Generate Report"
                 steps={[{ label: 'Templates' }]}
             />
+            
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
                 <div className="flex justify-between items-center mb-8">
                     <div>
@@ -92,7 +93,6 @@ export default function Index({ templates, users }) {
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
                             {templates.map((template) => (
                                 <div key={template.id} className="relative group">
-                                    {/* Restore Hover Preview Button */}
                                     <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                         <Link
                                             href={route('templates.review', { id: template.id })}
@@ -147,20 +147,22 @@ export default function Index({ templates, users }) {
                             href={selectedTemplate ? route('templates.review', { id: selectedTemplate.id }) : '#'}
                             className="text-sm font-bold text-[#469a21] hover:text-green-800 transition underline decoration-2 underline-offset-8"
                         >
-                            View Template Design Preview →
+                            Preview Template →
                         </Link>
                         
+                        {/* Dynamic Button: Switches to Green when an employee is selected */}
                         <button 
                             onClick={handleGenerate}
                             disabled={selectedUsers.length === 0}
-                            className="flex items-center gap-3 bg-[#636363] text-white px-12 py-3 rounded-xl font-bold shadow-lg hover:bg-black transition disabled:opacity-50"
+                            className={`flex items-center gap-3 px-12 py-3 rounded-xl font-bold shadow-lg transition-all duration-300 disabled:opacity-50 ${
+                                selectedUsers.length > 0 
+                                ? 'bg-[#469a21] hover:bg-green-700 text-white transform hover:scale-105' 
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            }`}
                         >
-                            {/* The icon stays generic for downloading */}
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h-2v5.586l-1.293-1.293z" />
                             </svg>
-                            
-                            {/* Dynamic label: "Export PDF" or "Export Excel" */}
                             Export as {exportFormat === 'pdf' ? 'PDF' : 'Excel'}
                         </button>
                     </div>
@@ -169,7 +171,6 @@ export default function Index({ templates, users }) {
                 <div className="space-y-6 p-2">
                     <div className="space-y-2">
                         <label className="flex items-center gap-2 text-gray-800 font-bold text-sm">
-                            {/* Restored Add Employee Icon */}
                             <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
@@ -190,7 +191,7 @@ export default function Index({ templates, users }) {
                     {selectedUsers.length > 0 && (
                         <div className="space-y-2">
                             <p className="text-xs font-bold text-gray-500">Selected for Generation</p>
-                            <div className="flex flex-wrap gap-2 p-3 border border-gray-100 rounded-xl bg-gray-50/50">
+                            <div className="flex flex-wrap gap-2 p-3 border border-gray-100 rounded-xl bg-gray-50/50 max-h-[150px] overflow-y-auto">
                                 {selectedUsers.map((u) => (
                                     <div key={u.id} className="flex items-center gap-2 pl-1 pr-2 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
                                         <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-[10px] text-white font-bold">{u.first_name[0]}</div>
@@ -204,7 +205,6 @@ export default function Index({ templates, users }) {
 
                     <div className="space-y-2">
                         <label className="flex items-center gap-2 text-gray-800 font-bold text-sm">
-                            {/* Restored Download Icon */}
                             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4" />
                             </svg>

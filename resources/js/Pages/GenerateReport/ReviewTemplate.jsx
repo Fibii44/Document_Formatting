@@ -172,10 +172,16 @@ export default function ReviewTemplate({ template }) {
                             </section>
                         </div>
 
-                        <div className="pt-8 border-t border-gray-100 mt-auto text-center">
-                            <Link href={route('generate-reports.index')} className="block w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs shadow-lg hover:bg-black transition uppercase tracking-widest">
-                                Done Reviewing
-                            </Link>
+                        <div className="pt-8 border-t border-gray-100 mt-auto">
+                        <Link 
+                            href={route('generate-reports.index')} 
+                            className="flex items-center justify-center w-full py-4 bg-[#469a21] hover:bg-green-700 text-white rounded-2xl font-bold text-sm shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Done Reviewing
+                        </Link>
                         </div>
                     </div>
                 </div>

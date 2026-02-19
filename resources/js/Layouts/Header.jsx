@@ -15,7 +15,7 @@ export default function Header({ title, user, onToggleSidebar }) {
                 </button>
             </div>
 
-            <div className="text-sm font-bold text-gray-700 tracking-widest uppercase ml-4 hidden sm:block">
+            <div className="absolute left-1/2 -translate-x-1/2 text-sm font-bold text-gray-700 tracking-widest uppercase hidden sm:block">
                 {title || "INFINITY HUB INTERNS"}
             </div>
 
