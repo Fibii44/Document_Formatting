@@ -50,10 +50,10 @@ class TemplateController extends Controller
    
     /**
      * Logic for Text Editor (dynamic string replacement).
+     * Supports both plain @tags and Quill HTML (spans with data-placeholder).
      */
     private function generateTextPdf($template, $employee) 
     {
-        // 1. The "Search List": Tell Laravel which tags to look for in the text
         $tags = [
             '@Full Name (First MI Last)',
             '@Full Name (Last, First MI)',
@@ -74,16 +74,15 @@ class TemplateController extends Controller
             '@Total Contributions',
         ];
 
-        // 2. The "Replacement Map": Use the Trait to get real values for each tag
         $replacements = [];
         foreach ($tags as $tag) {
             $replacements[$tag] = $this->getMappingValue($tag, $employee);
         }
 
-        // 3. The "Swap": Replace the tags in your template content with the real data
-        $finalText = str_replace(array_keys($replacements), array_values($replacements), $template->content);
+        $content = $template->content ?? '';
+        $finalText = $this->contentToPlainText($content, $replacements);
 
-        // 4. PDF Generation
+        // PDF Generation
         $pdf = new Fpdi();
         $pdf->SetMargins(20, 20, 20);
         $pdf->AddPage('P', 'A4');
@@ -96,6 +95,40 @@ class TemplateController extends Controller
         return response($pdf->Output("Report_{$employee->last_name}.pdf", 'S'), 200)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'attachment; filename="Report_'.$employee->last_name.'.pdf"');
+    }
+
+    /**
+     * Convert template content to plain text for PDF.
+     * Handles Quill HTML (spans with data-placeholder) and plain @tag content.
+     */
+    private function contentToPlainText(string $content, array $replacements): string
+    {
+        $hasHtml = str_contains($content, 'data-placeholder') || preg_match('/<[a-z][^>]*>/i', $content);
+
+        if (!$hasHtml) {
+            return str_replace(array_keys($replacements), array_values($replacements), $content);
+        }
+
+        $wrapper = '<div id="quill-root">' . $content . '</div>';
+        $dom = new \DOMDocument();
+        @$dom->loadHTML(
+            '<?xml encoding="UTF-8">' . $wrapper,
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        $xpath = new \DOMXPath($dom);
+        $placeholders = $xpath->query('//*[@data-placeholder]');
+
+        foreach ($placeholders as $node) {
+            $tag = $node->getAttribute('data-placeholder');
+            $value = $replacements[$tag] ?? $tag;
+            $textNode = $dom->createTextNode($value);
+            $node->parentNode->replaceChild($textNode, $node);
+        }
+
+        $root = $dom->getElementById('quill-root') ?: $dom->getElementsByTagName('div')->item(0);
+        $plain = $root ? $root->textContent : ($dom->documentElement->textContent ?? '');
+
+        return html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**

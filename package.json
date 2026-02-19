@@ -23,6 +23,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
-        "react-draggable": "^4.5.0"
+        "react-draggable": "^4.5.0",
+        "react-quill-new": "^3.8.3"
     }
 }
