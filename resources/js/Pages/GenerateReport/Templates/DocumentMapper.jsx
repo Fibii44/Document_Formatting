@@ -47,6 +47,14 @@ const FIELD_DETAILS = {
     '@Total Contributions': 'Combined SSS, PhilHealth, and Pag-IBIG',
 };
 
+// Same categories as Text Template Editor for consistent UI
+const FIELD_GROUPS = [
+    { label: 'Personal Information', fields: ['@Full Name (First MI Last)', '@Full Name (Last, First MI)', '@Full Name (Last, First)', '@Middle Name', '@TIN', '@Email'] },
+    { label: 'Employment Details', fields: ['@Role', '@Department', '@Join Date'] },
+    { label: 'Compensation & Earnings', fields: ['@Monthly Salary', '@Holiday Pay', '@Overtime Pay', '@Hazard Pay', '@Exempt Bonus', '@Taxable Bonus'] },
+    { label: 'Tax & Contributions', fields: ['@MWE Status', '@Total Contributions'] },
+];
+
 export default function DocumentMapper() {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -54,6 +62,7 @@ export default function DocumentMapper() {
     const [fileError, setFileError] = useState(null);
     const [fileSuccess, setFileSuccess] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [openGroups, setOpenGroups] = useState(() => FIELD_GROUPS.map(g => g.label));
 
     const { data, setData, post, processing } = useForm({
         name: '',
@@ -62,10 +71,18 @@ export default function DocumentMapper() {
         mappings: [], 
     });
 
-    const filteredFields = Object.keys(FIELD_DETAILS).filter(tag => 
-        tag.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        FIELD_DETAILS[tag].toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const toggleGroup = (label) => {
+        setOpenGroups(curr => curr.includes(label) ? curr.filter(l => l !== label) : [...curr, label]);
+    };
+
+    const filteredGroups = FIELD_GROUPS.map((group) => ({
+        ...group,
+        fields: group.fields.filter((tag) => {
+            const matchTag = tag.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchDesc = FIELD_DETAILS[tag]?.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchTag || matchDesc;
+        }),
+    })).filter((group) => searchTerm.trim() === '' ? true : group.fields.length > 0);
 
     useEffect(() => {
         if (fileSuccess || fileError) {
@@ -162,26 +179,54 @@ export default function DocumentMapper() {
 
                 <div className="flex gap-8 h-[800px]">
                     {!showConfirmation && (
-                        <div className="w-[340px] border border-gray-100 rounded-2xl p-5 bg-gray-50/50 flex flex-col shadow-sm overflow-hidden">
-                            <h3 className="font-bold text-gray-800 mb-4 text-base tracking-tight">Available Data Fields</h3>
-                            <div className="relative mb-6">
-                                
-                                <input 
+                        <div className="w-[340px] border border-gray-100 rounded-2xl p-5 bg-gray-50/50 flex flex-col shadow-sm h-[600px]">
+                            <div className="mb-4">
+                                <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Available Data Fields</h3>
+                                <p className="text-gray-400 text-[10px] italic">Drag fields onto the PDF to map data positions.</p>
+                            </div>
+
+                            <div className="relative mb-4">
+                                <input
                                     type="text"
                                     placeholder="Search fields..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:ring-green-500"
+                                    className="w-full border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-[11px] focus:ring-green-500 focus:border-green-500 bg-white"
                                 />
-                                <svg className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                <svg className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
                             </div>
 
                             <div className="space-y-3 overflow-y-auto pr-2 scrollbar-thin">
-                                {filteredFields.map((tag) => (
-                                    <button key={tag} type="button" onClick={() => addField(tag)} className="w-full text-left p-4 bg-white border border-gray-200 rounded-xl hover:border-green-500 transition-all shadow-sm">
-                                        <p className="text-green-600 font-bold text-[12px] mb-1">{tag}</p>
-                                        <p className="text-gray-400 text-[10px] font-medium italic">{FIELD_DETAILS[tag]}</p>
-                                    </button>
+                                {filteredGroups.map((group) => (
+                                    <div key={group.label} className="space-y-1 bg-white/60 border border-gray-100 rounded-xl px-3 py-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleGroup(group.label)}
+                                            className="w-full flex items-center justify-between text-left text-[10px] font-bold text-gray-600 uppercase mb-1"
+                                        >
+                                            <span>{group.label}</span>
+                                            <span className="text-[9px] text-gray-400">
+                                                {openGroups.includes(group.label) ? '▾' : '▸'}
+                                            </span>
+                                        </button>
+
+                                        {openGroups.includes(group.label) && group.fields.map((tag) => (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => addField(tag)}
+                                                className="w-full text-left mt-1 p-2 bg-green-50 border border-green-100 rounded-lg hover:border-green-500 hover:bg-green-100 transition-all group flex items-center gap-2"
+                                            >
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></div>
+                                                <div className="min-w-0">
+                                                    <p className="text-green-700 font-bold text-[11px]">{tag}</p>
+                                                    <p className="text-gray-400 text-[9px] font-medium italic truncate">{FIELD_DETAILS[tag]}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 ))}
                             </div>
                         </div>
