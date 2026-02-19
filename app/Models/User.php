@@ -30,6 +30,7 @@ class User extends Authenticatable
         'ph_contri',
         'pi_contri',
         'join_date',
+        'signature_path'
     ];
 
     protected $hidden = [

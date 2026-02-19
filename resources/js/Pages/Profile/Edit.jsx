@@ -3,32 +3,25 @@ import { Head, Link } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import EditSignature from "./Partials/UpdateSignatureForm";
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({ mustVerifyEmail, status, signatureUrl }) {
     return (
         <AuthenticatedLayout
-            header={
-                <div className="flex items-center gap-4">
-                    <Link
-                        href={route('dashboard')}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Back to Dashboard
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Profile
-                    </h2>
-                </div>
-            }
+           
         >
-            <Head title="Profile" />
+            <Head title="Profile Settings" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    
+                    {/* 1. Signature Asset Section */}
+                    <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-gray-100">
+                        <EditSignature signatureUrl={signatureUrl} />
+                    </div>
+
+                    {/* 2. Profile Information */}
+                    <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-gray-100">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
@@ -36,11 +29,13 @@ export default function Edit({ mustVerifyEmail, status }) {
                         />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    {/* 3. Password Security */}
+                    <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-gray-100">
                         <UpdatePasswordForm className="max-w-xl" />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    {/* 4. Danger Zone */}
+                    <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-red-50">
                         <DeleteUserForm className="max-w-xl" />
                     </div>
                 </div>

@@ -17,9 +17,6 @@ class TemplateController extends Controller
 {
     use HasReportMapping; 
 
-    /**
-     * Display a listing of templates and users.
-     */
     public function index()
     {
         return inertia('GenerateReport/Index', [
@@ -28,9 +25,6 @@ class TemplateController extends Controller
         ]);
     }
 
-    /**
-     * Dedicated preview page for template design validation.
-     */
     public function review($id)
     {
         $template = Template::findOrFail($id);
@@ -40,9 +34,6 @@ class TemplateController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created template.
-     */
     public function store(StoreTemplateRequest $request)
     {
         $data = $request->validated();
@@ -54,9 +45,6 @@ class TemplateController extends Controller
         return redirect()->route('generate-reports.index');
     }
 
-    /**
-     * Entry point for report generation.
-     */
     public function generate(Template $template, User $employee) 
     {
         if ($template->type === 'text') {
@@ -66,10 +54,6 @@ class TemplateController extends Controller
         return $this->generateMappedPdf($template, $employee);
     }
 
-    /**
-     * Logic for Text Editor (dynamic string replacement).
-     * Supports both plain @tags and Quill HTML (spans with data-placeholder).
-     */
     private function generateTextPdf($template, $employee) 
     {
         $tags = [
@@ -86,19 +70,13 @@ class TemplateController extends Controller
         }
 
         $content = $template->content ?? '';
-        
-        // NEW: We process the HTML to replace placeholders but KEEP the HTML tags
         $finalHtml = $this->processHtmlContent($content, $replacements);
 
         $pdf = new Fpdi();
         $pdf->SetMargins(20, 20, 20);
         $pdf->AddPage('P', 'A4');
         
-        // Set a default font
         $pdf->SetFont('helvetica', '', 11);
-
-        // USE writeHTMLCell instead of MultiCell to render Bold/Italic/Underline
-        // Parameters: width, height, x, y, html, border, ln, fill, reseth, align, autopadding
         $pdf->writeHTMLCell(0, 0, '', '', $finalHtml, 0, 1, 0, true, 'L', true);
 
         return response()->streamDownload(function () use ($pdf) {
@@ -109,7 +87,7 @@ class TemplateController extends Controller
     }
 
     /**
-     * Logic for Visual Mapper (coordinate placement on PDF).
+     * UPDATED Logic for Visual Mapper with Dynamic Paper Size detection.
      */
     private function generateMappedPdf($template, $employee) 
     {
@@ -119,21 +97,44 @@ class TemplateController extends Controller
         
         $fullPath = storage_path('app/public/' . $template->file_path);
         $pdf->setSourceFile($fullPath);
+        
         $templateId = $pdf->importPage(1);
-        $pdf->AddPage('P', 'A4');
+        $size = $pdf->getTemplateSize($templateId);
+    
+        $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
         $pdf->useTemplate($templateId);
         
         $pdf->SetTextColor(0, 0, 0);
-        $ratio = 210 / 794; 
-
+        $ratio = $size['width'] / 794; 
+    
         foreach ($template->field_mappings ?? [] as $mapping) {
             $tag = $mapping['tag'];
+            
+            // Detect if the tag is the Employer Signature
+            $isSignature = str_contains($tag, 'Signature');
+            
             $value = $this->getMappingValue($tag, $employee); 
             
             $x_mm = floatval($mapping['x']) * $ratio;
             $y_mm = floatval($mapping['y']) * $ratio;
             $y_corrected = $y_mm + 3.5; 
-        
+    
+            // CASE 1: Render the current user's E-Signature Image
+            if ($isSignature) {
+                $currentUser = auth()->user(); 
+                
+                if ($currentUser->signature_path) {
+                    $sigPath = storage_path('app/public/' . $currentUser->signature_path);
+                    
+                    if (file_exists($sigPath)) {
+                        // Coordinates and sizing for the signature PNG
+                        $pdf->Image($sigPath, $x_mm, $y_mm, 0, 12, 'PNG');
+                    }
+                }
+                continue; 
+            }
+    
+            // CASE 2: TIN Digits
             if (str_contains($tag, 'TIN')) {
                 $pdf->SetFont('Courier', 'B', 10); 
                 $digits = str_split(preg_replace('/[^\d]/', '', $value));
@@ -143,12 +144,14 @@ class TemplateController extends Controller
                     $currentX += 5.9; 
                     if ($index == 2 || $index == 5 || $index == 8) $currentX += 2.22;
                 }
-            } else {
+            } 
+            // CASE 3: Standard Text
+            else {
                 $pdf->SetFont('Helvetica', 'B', 10);
                 $pdf->Text($x_mm, $y_corrected, $value);
             }
         }
-
+    
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->Output('', 'S');
         }, "Report_{$template->name}_{$employee->last_name}.pdf", [
@@ -156,40 +159,6 @@ class TemplateController extends Controller
         ]);
     }
 
-    /**
-     * Convert template content to plain text, handling Quill HTML spans.
-     */
-    private function contentToPlainText(string $content, array $replacements): string
-    {
-        $hasHtml = str_contains($content, 'data-placeholder') || preg_match('/<[a-z][^>]*>/i', $content);
-
-        if (!$hasHtml) {
-            return str_replace(array_keys($replacements), array_values($replacements), $content);
-        }
-
-        $wrapper = '<div id="quill-root">' . $content . '</div>';
-        $dom = new \DOMDocument();
-        @$dom->loadHTML('<?xml encoding="UTF-8">' . $wrapper, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-        $xpath = new \DOMXPath($dom);
-        $placeholders = $xpath->query('//*[@data-placeholder]');
-
-        foreach ($placeholders as $node) {
-            $tag = $node->getAttribute('data-placeholder');
-            $value = $replacements[$tag] ?? $tag;
-            $textNode = $dom->createTextNode($value);
-            $node->parentNode->replaceChild($textNode, $node);
-        }
-
-        $root = $dom->getElementById('quill-root') ?: $dom->getElementsByTagName('div')->item(0);
-        $plain = $root ? $root->textContent : ($dom->documentElement->textContent ?? '');
-
-        return html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    }
-
-    /**
-     * Process HTML content: Replaces data-placeholder spans with real values
-     * while keeping other HTML tags (<b>, <i>, etc.) intact.
-     */
     private function processHtmlContent(string $content, array $replacements): string
     {
         $dom = new \DOMDocument();
@@ -216,15 +185,11 @@ class TemplateController extends Controller
 
         return $html;
     }
-    /**
-     * Excel Export for one or more users.
-     */
+
     public function exportExcel(Request $request, Template $template)
     {
         $userIds = explode(',', $request->query('user_ids'));
         $users = User::whereIn('id', $userIds)->get();
-
-        // Match PDF naming convention: uses first selected user's last name
         $lastName = $users->first() ? $users->first()->last_name : 'Export';
 
         return Excel::download(

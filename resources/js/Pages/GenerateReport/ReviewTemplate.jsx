@@ -1,29 +1,38 @@
-import React, { useState } from 'react';
+import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Head, Link } from '@inertiajs/react';
-
-const PREVIEW_DATA = {
-    '@Full Name (First MI Last)': 'JHON LESTER P. YBANEZ',
-    '@Full Name (Last, First MI)': 'YBANEZ, JHON LESTER P.',
-    '@Full Name (Last, First)': 'YBANEZ, JHON LESTER',
-    '@Middle Name': 'PAYPA',
-    '@TIN': '987-654-321-000',
-    '@Role': 'SENIOR WEB DEVELOPER',
-    '@Department': 'IT DEPARTMENT',
-    '@Email': 'jhonlester@example.com',
-    '@Join Date': 'FEB 17, 2026',
-    '@Monthly Salary': '85,000.00',
-    '@Holiday Pay': '5,000.00',
-    '@Overtime Pay': '8,000.00',
-    '@Hazard Pay': '0.00',
-    '@MWE Status': 'NO',
-    '@Exempt Bonus': '90,000.00',    
-    '@Taxable Bonus': '30,000.00',   
-    '@Total Contributions': '3,125.00', 
-};
+import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function ReviewTemplate({ template }) {
-    const [zoom, setZoom] = useState(1.1);
+    // 1. Fetch current logged-in user data
+    const { auth } = usePage().props;
+    const user = auth.user;
+
+    // 2. Resolve the dynamic signature path
+    const currentSignature = user.signature_path 
+        ? `/storage/${user.signature_path}` 
+        : '/images/sample-signature.png';
+
+    // 3. Updated PREVIEW_DATA with the CORRECT TAG mapping
+    const PREVIEW_DATA = {
+        '@Full Name (First MI Last)': 'JHON LESTER P. YBANEZ',
+        '@Full Name (Last, First MI)': 'YBANEZ, JHON LESTER P.',
+        '@Full Name (Last, First)': 'YBANEZ, JHON LESTER',
+        '@Middle Name': 'PAYPA',
+        '@TIN': '987-654-321-000',
+        '@Role': 'SENIOR WEB DEVELOPER',
+        '@Department': 'IT DEPARTMENT',
+        '@Email': 'jhonlester@example.com',
+        '@Join Date': 'FEB 17, 2026',
+        '@Monthly Salary': '85,000.00',
+        '@Holiday Pay': '5,000.00',
+        '@Overtime Pay': '8,000.00',
+        '@Hazard Pay': '0.00',
+        '@MWE Status': 'NO',
+        '@Exempt Bonus': '90,000.00',    
+        '@Taxable Bonus': '30,000.00',   
+        '@Total Contributions': '3,125.00', 
+        '@E-Signature': currentSignature, // Ensure this tag matches your mapper
+    };
 
     // Normalize mappings for Upload type
     const mappings = Array.isArray(template.field_mappings) 
@@ -33,24 +42,27 @@ export default function ReviewTemplate({ template }) {
     // Helper to process Text Template content with preview data
     const getProcessedContent = () => {
         let content = template.content || '';
-        
-        // 1. Replace Quill span placeholders
-        // Quill uses <span data-placeholder="@Tag">...</span>
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, 'text/html');
         const spans = doc.querySelectorAll('span[data-placeholder]');
         
         spans.forEach(span => {
             const tag = span.getAttribute('data-placeholder');
-            span.textContent = PREVIEW_DATA[tag] || tag;
-            // Style it like a pill in preview if you want, or just leave as text
-            span.style.color = '#15803d';
-            span.style.fontWeight = 'bold';
+            const displayValue = PREVIEW_DATA[tag] || tag;
+
+            // Handle e-signature image in text templates
+            if (tag === '@E-Signature') {
+                span.innerHTML = `<img src="${displayValue}" style="height: 40px; vertical-align: middle;" />`;
+            } else {
+                span.textContent = displayValue;
+                span.style.color = '#15803d';
+                span.style.fontWeight = 'bold';
+            }
         });
 
-        // 2. Fallback for raw text placeholders
         let finalHtml = doc.body.innerHTML;
         Object.entries(PREVIEW_DATA).forEach(([tag, value]) => {
+            if (tag === '@E-Signature') return; // Skip image tags for string replacement
             const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(escapedTag, 'g');
             finalHtml = finalHtml.replace(regex, value);
@@ -81,10 +93,8 @@ export default function ReviewTemplate({ template }) {
                         </div>
                     </div>
 
-                    <div className="flex items-center bg-gray-100 rounded-2xl px-2 py-1 gap-1 border border-gray-200">
-                        <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-2 hover:bg-white rounded-xl transition text-gray-600">－</button>
-                        <span className="text-xs font-mono w-14 text-center font-bold text-gray-800">{Math.round(zoom * 100)}%</span>
-                        <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="p-2 hover:bg-white rounded-xl transition text-gray-600">＋</button>
+                    <div className="hidden md:block text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Preview Mode Only
                     </div>
                 </div>
 
@@ -93,16 +103,10 @@ export default function ReviewTemplate({ template }) {
                     {/* LEFT: THE CANVAS */}
                     <div className="flex-1 overflow-auto p-16 flex justify-center custom-scrollbar">
                         <div 
-                            className="relative bg-white shadow-[0_0_100px_rgba(0,0,0,0.8)] origin-top transition-transform duration-300 overflow-hidden"
-                            style={{ 
-                                width: '794px', 
-                                height: '1123px', 
-                                transform: `scale(${zoom})`,
-                                marginBottom: zoom > 1 ? `${(zoom - 1) * 1123}px` : '40px'
-                            }}
+                            className="relative bg-white shadow-[0_0_100px_rgba(0,0,0,0.8)] mb-32 flex-shrink-0"
+                            style={{ width: '794px', height: '1248px' }}
                         >
                             {template.type === 'text' ? (
-                                /* TEXT TEMPLATE PREVIEW (A4 PAPER VIEW) */
                                 <div className="p-[20mm] h-full overflow-hidden text-gray-800 break-words">
                                     <div 
                                         className="prose prose-sm max-w-none preview-content"
@@ -111,15 +115,17 @@ export default function ReviewTemplate({ template }) {
                                     />
                                 </div>
                             ) : (
-                                /* UPLOAD (PDF) TEMPLATE PREVIEW */
                                 <>
                                     <iframe 
-                                        src={`/storage/${template.file_path}#toolbar=0&navpanes=0`} 
-                                        className="absolute inset-0 w-full h-full border-none pointer-events-none" 
+                                        src={`/storage/${template.file_path}#toolbar=0&navpanes=0&view=FitH`} 
+                                        className="absolute inset-0 w-full h-full border-none" 
+                                        style={{ pointerEvents: 'none' }}
                                     />
                                     <div className="absolute inset-0 z-20 pointer-events-none">
                                         {mappings.map((m, index) => {
                                             const displayValue = PREVIEW_DATA[m.tag] || m.tag;
+                                            const isSignature = m.tag?.includes('Signature');
+
                                             if (m.tag?.includes('TIN')) {
                                                 const digits = displayValue.replace(/[^\d]/g, '').split('');
                                                 return (
@@ -130,6 +136,20 @@ export default function ReviewTemplate({ template }) {
                                                     </div>
                                                 );
                                             }
+
+                                            // RENDERING SIGNATURE AS IMAGE
+                                            if (isSignature) {
+                                                return (
+                                                    <div key={index} className="absolute" style={{ left: `${m.x}px`, top: `${m.y}px` }}>
+                                                        <img 
+                                                            src={displayValue} 
+                                                            alt="User Signature" 
+                                                            style={{ height: '50px', width: 'auto', objectFit: 'contain' }} 
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+
                                             return (
                                                 <div key={index} className="absolute font-bold text-[13.33px] text-black whitespace-nowrap" style={{ left: `${m.x}px`, top: `${m.y}px`, fontFamily: 'Helvetica, Arial, sans-serif' }}>
                                                     {displayValue}
@@ -145,7 +165,6 @@ export default function ReviewTemplate({ template }) {
                     {/* RIGHT: CONTROL PANEL */}
                     <div className="w-96 bg-white border-l border-gray-100 p-8 flex flex-col shadow-2xl z-20">
                         <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar">
-
                             <section>
                                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
                                     {template.type === 'text' ? 'Active Placeholders' : `Mapped Fields (${mappings.length})`}
@@ -173,15 +192,15 @@ export default function ReviewTemplate({ template }) {
                         </div>
 
                         <div className="pt-8 border-t border-gray-100 mt-auto">
-                        <Link 
-                            href={route('generate-reports.index')} 
-                            className="flex items-center justify-center w-full py-4 bg-[#469a21] hover:bg-green-700 text-white rounded-2xl font-bold text-sm shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Done Reviewing
-                        </Link>
+                            <Link 
+                                href={route('generate-reports.index')} 
+                                className="flex items-center justify-center w-full py-4 bg-[#469a21] hover:bg-green-700 text-white rounded-2xl font-bold text-sm shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Done Reviewing
+                            </Link>
                         </div>
                     </div>
                 </div>
