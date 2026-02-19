@@ -28,6 +28,26 @@ PlaceholderBlot.blotName = 'placeholder';
 PlaceholderBlot.tagName = 'span';
 Quill.register(PlaceholderBlot);
 
+const FIELD_DETAILS = {
+    '@Full Name (First MI Last)': 'Standard format: JHON LESTER P. YBANEZ',
+    '@Full Name (Last, First MI)': 'Formal format: YBANEZ, JHON LESTER P.',
+    '@Full Name (Last, First)': 'Last and First name only: YBANEZ, JHON LESTER',
+    '@Middle Name': 'Full middle name: PAYPA',
+    '@TIN': 'Tax Identification Number',
+    '@Role': 'Job Title/Role',
+    '@Department': 'Department name',
+    '@Email': 'Email Address',
+    '@Join Date': 'Employment Start Date',
+    '@Monthly Salary': 'Basic monthly pay',
+    '@Holiday Pay': 'Total holiday compensation',
+    '@Overtime Pay': 'Total overtime compensation',
+    '@Hazard Pay': 'Total hazard pay (usually for MWEs)',
+    '@MWE Status': 'Is Minimum Wage Earner? (YES/NO)',
+    '@Exempt Bonus': 'Bonus portion within 90k limit',
+    '@Taxable Bonus': 'Bonus portion exceeding 90k limit',
+    '@Total Contributions': 'Combined SSS, PhilHealth, and Pag-IBIG',
+};
+
 const PLACEHOLDER_GROUPS = [
     {
         label: 'Personal Information',
@@ -65,9 +85,11 @@ export default function TextTemplateEditor() {
 
     const filteredGroups = PLACEHOLDER_GROUPS.map((group) => ({
         ...group,
-        fields: group.fields.filter((tag) =>
-            tag.toLowerCase().includes(searchTerm.toLowerCase())
-        ),
+        fields: group.fields.filter((tag) => {
+            const matchTag = tag.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchDesc = FIELD_DETAILS[tag]?.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchTag || matchDesc;
+        }),
     })).filter((group) => searchTerm.trim() === '' ? true : group.fields.length > 0);
 
     // --- Safety Rail: Insert Atomic Placeholder ---
@@ -170,8 +192,11 @@ export default function TextTemplateEditor() {
                                             onClick={() => insertPlaceholder(tag)}
                                             className="w-full text-left mt-1 p-2 bg-green-50 border border-green-100 rounded-lg hover:border-green-500 hover:bg-green-100 transition-all group flex items-center gap-2"
                                         >
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                                            <p className="text-green-700 font-bold text-[11px]">{tag}</p>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></div>
+                                            <div className="min-w-0">
+                                                <p className="text-green-700 font-bold text-[11px]">{tag}</p>
+                                                <p className="text-gray-400 text-[9px] font-medium italic truncate">{FIELD_DETAILS[tag]}</p>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
